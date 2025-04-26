@@ -1,32 +1,47 @@
-name: GitHub build pages
+name: Build and Deploy to GitHub Pages
 
+# Trigger on pushes to main
 on:
   push:
     branches:
       - main
 
-jobs:
-  deploy:
-    name: Build and deploy GH pages
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+# Grant permissions so GH Actions can publish your site
+permissions:
+  pages: write
+  id-token: write
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Check out your code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2) Set up Node.js 18
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Build
-        run: npm ci && npm run build
+      # 3) Install deps & build your Vite/Svelte app
+      - name: Install dependencies
+        run: npm ci
+      - name: Build the app
+        run: npm run build
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      # 4) Tell GH we’re deploying Pages
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v3
+
+      # 5) Upload your built files (./dist) as the Pages artifact
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
+          path: ./dist
+
+      # 6) Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
